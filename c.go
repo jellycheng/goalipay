@@ -12,4 +12,6 @@ const (
 	SUCCESS = "SUCCESS"
 	FAIL    = "FAIL"
 	OK      = "OK"
+
+	AlipayGatewayUrl = "https://openapi.alipay.com/gateway.do"
 )
