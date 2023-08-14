@@ -19,3 +19,8 @@
 
 # Go workspace file
 go.work
+cjs_test.go
+go.sum
+.DS_Store
+cjs.ini
+
