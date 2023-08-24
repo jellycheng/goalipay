@@ -6,18 +6,21 @@ import (
 	"fmt"
 	"github.com/jellycheng/gosupport"
 	"github.com/jellycheng/gosupport/xcrypto"
+	"strings"
 	"time"
 )
 
 type AplipayConfig struct {
-	AppId           string
-	SignType        string
-	Charset         string
-	PrivateKey      *rsa.PrivateKey // 应用私钥
-	AliPayPublicKey *rsa.PublicKey  // 支付宝证书公钥内容
-	ReturnUrl       string
-	NotifyUrl       string
-	Format          string
+	AppId              string
+	SignType           string
+	Charset            string
+	PrivateKey         *rsa.PrivateKey // 应用私钥
+	AliPayPublicKey    *rsa.PublicKey  // 支付宝证书公钥内容
+	AliPayPublicCertSN string
+	ReturnUrl          string
+	NotifyUrl          string
+	Format             string
+	IsVerifySign       bool // 是否验证支付宝响应结果签名
 }
 
 // 设置支付后的ReturnUrl
@@ -45,6 +48,44 @@ func (m *AplipayConfig) SetSignType(signType string) *AplipayConfig {
 		m.SignType = signType
 	}
 	return m
+}
+
+func (m *AplipayConfig) GetSignData(bodyStr string, alipayCertSN string) (signData string, err error) {
+	var (
+		indexStart = strings.Index(bodyStr, `_response":`)
+		indexEnd   int
+	)
+	indexStart = indexStart + 11
+	bsLen := len(bodyStr)
+	if alipayCertSN != "" {
+		// 公钥证书模式
+		if alipayCertSN != m.AliPayPublicCertSN {
+			return "", fmt.Errorf("[证书不匹配], 当前使用的支付宝公钥证书SN[%s]与网关响应报文中的SN[%s]不匹配", m.AliPayPublicCertSN, alipayCertSN)
+		}
+		indexEnd = strings.Index(bodyStr, `,"alipay_cert_sn":`)
+		if indexEnd > indexStart && bsLen > indexStart {
+			signData = bodyStr[indexStart:indexEnd]
+			return
+		}
+		return "", fmt.Errorf("[原签名数据错误], value: %s", bodyStr)
+	}
+	// 普通公钥模式
+	indexEnd = strings.Index(bodyStr, `,"sign":`)
+	if indexEnd > indexStart && bsLen > indexStart {
+		signData = bodyStr[indexStart:indexEnd]
+		return
+	}
+	return "", fmt.Errorf("[原签名数据错误], value: %s", bodyStr)
+}
+
+func (m *AplipayConfig) AutoVerifySignByCert(sign, signData string, signDataErr error) (err error) {
+	if m.IsVerifySign && m.AliPayPublicKey != nil {
+		if signDataErr != nil {
+			return signDataErr
+		}
+		return VerifySignByCert(sign, signData, m.SignType, m.AliPayPublicKey)
+	}
+	return nil
 }
 
 func NewClient(appid, privateKey string) (*AplipayConfig, error) {

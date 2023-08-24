@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/jellycheng/gosupport"
 	"hash"
@@ -67,4 +68,38 @@ func EncodeAliPaySignParams(bm gosupport.BodyMap) string {
 		return ""
 	}
 	return buf.String()[:buf.Len()-1]
+}
+
+// 获取验证数据：https://opendocs.alipay.com/common/02mse7#自行实现验签
+func VerifySignByCert(sign, signData string, signType string, aliPayPublicKey *rsa.PublicKey) error {
+	var (
+		h     hash.Hash
+		hashs crypto.Hash
+		err   error
+	)
+	//aliPayPublicKey, err := xcrypto.DecodePublicKey(pemContent)
+	//if err != nil {
+	//	return err
+	//}
+
+	if aliPayPublicKey != nil {
+		signBytes, _ := base64.StdEncoding.DecodeString(sign)
+		switch signType {
+		case RSA:
+			hashs = crypto.SHA1
+		case RSA2:
+			hashs = crypto.SHA256
+		default:
+			hashs = crypto.SHA256
+		}
+		h = hashs.New()
+		h.Write([]byte(signData))
+		if err = rsa.VerifyPKCS1v15(aliPayPublicKey, hashs, h.Sum(nil), signBytes); err != nil {
+			return fmt.Errorf("[验证签名错误]: %v", err)
+		}
+		return nil
+	} else {
+		return errors.New("没有设置支付宝公钥")
+	}
+
 }

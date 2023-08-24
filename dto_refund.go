@@ -1,18 +1,11 @@
 package goalipay
 
-type TradeFundBill struct {
-	FundChannel string `json:"fund_channel,omitempty"` // 同步通知里是 fund_channel
-	Amount      string `json:"amount,omitempty"`
-	RealAmount  string `json:"real_amount,omitempty"`
-	FundType    string `json:"fund_type,omitempty"`
-}
-
 type RefundPresetPaytool struct {
 	Amount         []string `json:"amount,omitempty"`
 	AssertTypeCode string   `json:"assert_type_code,omitempty"`
 }
 
-type TradeRefund struct {
+type TradeRefundDto struct {
 	ErrorResponseDto
 	TradeNo                      string                 `json:"trade_no,omitempty"`
 	OutTradeNo                   string                 `json:"out_trade_no,omitempty"`
@@ -36,9 +29,10 @@ type TradeRefund struct {
 	RefundHybAmount              string                 `json:"refund_hyb_amount,omitempty"`
 }
 
+// 发起退款 返回
 type TradeRefundResponseDto struct {
-	Response     *TradeRefund `json:"alipay_trade_refund_response"`
-	AlipayCertSn string       `json:"alipay_cert_sn,omitempty"`
-	SignData     string       `json:"-"`
-	Sign         string       `json:"sign"`
+	Response     *TradeRefundDto `json:"alipay_trade_refund_response"`
+	AlipayCertSn string          `json:"alipay_cert_sn,omitempty"`
+	SignData     string          `json:"-"`
+	Sign         string          `json:"sign"`
 }

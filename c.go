@@ -9,7 +9,7 @@ const (
 	JsonFormat = "JSON"
 	UTF8       = "utf-8"
 
-	SUCCESS = "SUCCESS"
+	SUCCESS = "Success"
 	FAIL    = "FAIL"
 	OK      = "OK"
 
