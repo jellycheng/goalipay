@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/jellycheng/gosupport"
 	"hash"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -70,7 +71,7 @@ func EncodeAliPaySignParams(bm gosupport.BodyMap) string {
 	return buf.String()[:buf.Len()-1]
 }
 
-// 获取验证数据：https://opendocs.alipay.com/common/02mse7#自行实现验签
+// 验证api数据：https://opendocs.alipay.com/common/02mse7#自行实现验签
 func VerifySignByCert(sign, signData string, signType string, aliPayPublicKey *rsa.PublicKey) error {
 	var (
 		h     hash.Hash
@@ -102,4 +103,34 @@ func VerifySignByCert(sign, signData string, signType string, aliPayPublicKey *r
 		return errors.New("没有设置支付宝公钥")
 	}
 
+}
+
+func VerifyNotifySign(notifyContent interface{}, aliPayPublicKey *rsa.PublicKey) (bool, error) {
+	if aliPayPublicKey == nil || notifyContent == nil {
+		return false, errors.New("notifyContent or aliPayPublicKeyis nil")
+	}
+	var (
+		bodySign     string
+		bodySignType string
+		signData     string
+		bm           = gosupport.NewBodyMap()
+	)
+	if reflect.ValueOf(notifyContent).Kind() == reflect.Map {
+		if bmObj, ok := notifyContent.(gosupport.BodyMap); ok {
+			bm = bmObj
+		} else {
+			return false, fmt.Errorf("map类型错误：%s", notifyContent)
+		}
+	} else if err := gosupport.JsonUnmarshal(notifyContent.(string), &bm); err != nil {
+		return false, fmt.Errorf("json.Unmarshal(%s)：%w", notifyContent, err)
+	}
+	bodySign = bm.GetString("sign")
+	bodySignType = bm.GetString("sign_type")
+	bm.Remove("sign")
+	bm.Remove("sign_type")
+	signData = EncodeAliPaySignParams(bm)
+	if err := VerifySignByCert(bodySign, signData, bodySignType, aliPayPublicKey); err != nil {
+		return false, err
+	}
+	return true, nil
 }

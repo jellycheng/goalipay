@@ -9,9 +9,9 @@ const (
 	JsonFormat = "JSON"
 	UTF8       = "utf-8"
 
-	SUCCESS = "Success"
-	FAIL    = "FAIL"
-	OK      = "OK"
+	SUCCESS = "success"
+	FAIL    = "fail"
+	OK      = "ok"
 
 	AlipayGatewayUrl = "https://openapi.alipay.com/gateway.do"
 )
