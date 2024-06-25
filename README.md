@@ -273,6 +273,52 @@ func main() {
 ```
 [https://opendocs.alipay.com/open/repo-0038v9](https://opendocs.alipay.com/open/repo-0038v9) <br>
 
+## 查询支付宝商户号余额
+```
+package main
+
+import (
+	"fmt"
+	"github.com/jellycheng/goalipay"
+	"github.com/jellycheng/gosupport"
+	"github.com/jellycheng/gosupport/xcrypto"
+)
+
+func main() {
+	appid := "" // 开放平台创建的应用ID
+	pk, _ := gosupport.FileGetContents("应用私钥文件地址")
+	cfg, err := goalipay.NewClient(appid, pk)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	cfg.IsVerifySign = true
+	pubK, _ := gosupport.FileGetContents("支付宝公钥文件地址")
+	pubKStr := xcrypto.RsaContent2PublicKey(pubK)
+	var e error
+	cfg.AliPayPublicKey, e = xcrypto.DecodePublicKey([]byte(pubKStr))
+	if e != nil {
+		fmt.Println(e)
+		return
+	}
+	// 请求参数
+	bizMap := make(gosupport.BodyMap)
+	if resData, bodyStr, err := goalipay.BalanceQuery(cfg, bizMap, make(gosupport.BodyMap)); err == nil {
+		fmt.Println("支付宝返回原始内容：", bodyStr)
+		if goalipay.IsError(resData.Response.Code) {
+			fmt.Println("查询错误：", resData.Response.Msg)
+		} else { // 查询正确
+			fmt.Println(fmt.Sprintf("查询结果： %+v", resData.Response))
+		}
+	} else {
+		fmt.Println(err)
+	}
+
+}
+
+
+```
+
 ## 工具
 ```
 
